@@ -1,5 +1,7 @@
 # ZIO Backtask
 
+![scala-version][scala-version-badge]
+
 ## Overview
 
 ZIO Backtask is background job frameworks that you can simply implement in your ZIO application. 
@@ -90,3 +92,4 @@ Please check the [examples](modules/examples/src/main/scala/zio/backtask/example
 [Redis]: https://redis.io
 [Lettuce]: https://lettuce.io
 [sidekiq]: https://github.com/mperham/sidekiq
+[scala-version-badge]: https://img.shields.io/badge/scala-3.2.2-blue?logo=scala&color=red
