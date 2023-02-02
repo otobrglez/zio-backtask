@@ -43,7 +43,6 @@ object tasks:
 object BacktaskApp extends ZIOAppDefault:
   import tasks.*
 
-  // Putting tasks in the background is as easy as calling .performAsync() or performIn(delay)
   def clientProgram: ZIO[Redis, Throwable, Unit] =
     for
       _ <- logInfo("Booting.")
