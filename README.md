@@ -62,7 +62,7 @@ object BacktaskApp extends ZIOAppDefault:
   def program =
     for
       fib1 <- clientProgram.fork
-      // TODO: The BacktaskScheduler will be embedded in the worker in the near future. 
+      // TODO: The BacktaskScheduler will be embedded in the Worker in the near future. 
       fib2 <- BacktaskScheduler.run.fork
       _    <- fib1.join
       _    <- fib2.join
