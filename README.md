@@ -56,7 +56,6 @@ object BacktaskApp extends ZIOAppDefault:
       _ <- saySomething("Mail was sent! ✉️").performIn(5.seconds, "mail")
     yield ()
 
-  // Example program, that creates and moves tasks to queues
   def program =
     for
       fib1 <- clientProgram.fork
