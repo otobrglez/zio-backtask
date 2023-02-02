@@ -13,11 +13,12 @@ import io.circe.syntax.*
 
 import java.math.BigInteger
 import java.security.SecureRandom
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Instant, LocalDateTime, ZoneOffset}
+import java.util.concurrent.TimeUnit
 
 trait Backtask[Env]:
   self =>
-  import Backtask.{QueueName, default}
+  import Backtask.{default, QueueName}
 
   def queueName: QueueName = default
 
@@ -34,6 +35,20 @@ trait Backtask[Env]:
   ): ZIO[Redis, Throwable, JobID] =
     Backtask.enqueue(self, queueName, Some(delay))
 
+  def performAt[T <: Backtask[Env]](
+    at: LocalDateTime,
+    queueName: QueueName = default
+  ): ZIO[Redis, Throwable, JobID] =
+    attempt(
+      FiniteDuration.apply(Instant.now.getEpochSecond - at.toEpochSecond(ZoneOffset.UTC), TimeUnit.SECONDS)
+    ).flatMap(delay =>
+      Backtask.enqueue(
+        self,
+        queueName,
+        Some(delay)
+      )
+    )
+    
 object Backtask:
   type QueueName = String
   val default: QueueName = "default"

@@ -77,6 +77,29 @@ object BacktaskApp extends ZIOAppDefault:
 
 Please check the [examples](modules/examples/src/main/scala/zio/backtask/examples) for more examples and details.
 
+## Supported methods
+
+### `performAsync`
+
+Moves the given `Backtask` to `default` queue for instant consumption.
+
+The `queueName` is set to default, however it can be overriden.
+
+### `performIn`
+
+Moves the `Backtask` to a given queue. The task will be executed after the given
+`FiniteDelay`. Tasks, that are delayed or scheduled can not be scheduled on `default`
+queue.
+
+### `performAt`
+
+Function accepts `LocalDateTime` defining the exact time when the `Backtask` should 
+be executed. The system works on UTC; whatever timezone will be given gets converted to it.
+
+Same as with `performIn`, this function can't schedule on `default` queue, 
+meaning that some other queue needs to be given.
+
+
 ## Resources
 
 - [Redis / ZRANGEBYSCORE](https://redis.io/commands/zrangebyscore/)

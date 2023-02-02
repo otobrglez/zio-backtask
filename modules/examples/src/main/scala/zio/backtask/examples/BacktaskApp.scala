@@ -6,6 +6,7 @@ import zio.backtask.{Backtask, BacktaskScheduler, Redis, RedisClient, Worker}
 import zio.logging.backend.SLF4J
 import zio.{ZIOAppDefault, *}
 
+import java.time.LocalDateTime
 import scala.concurrent.duration.*
 
 object Tasks:
@@ -44,11 +45,9 @@ object BacktaskApp extends ZIOAppDefault:
       _ <- logInfo("Booting.")
       _ <- Redis.flushdb() *> logInfo("Flushed db.")
       _ <- add(40, 2).performAsync()
-      _ <- add(20, 2).performAsync()
       _ <- add(20, 22).performAsync("math")
       _ <- saySomething("Hello world!").performAsync()
-      _ <- saySomething("Hello world, again!").performAsync()
-      _ <- saySomething("Hello world!").performAsync()
+      _ <- saySomething("Doing this in one hour").performAt(LocalDateTime.now.plusHours(1), "hello")
       _ <- saySomething("Foo 10").performIn(10.seconds, "hello")
       _ <- saySomething("Bar 20").performIn(20.seconds, "hello")
       _ <- saySomething("Baz 60").performIn(60.seconds, "hello")
