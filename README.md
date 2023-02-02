@@ -7,7 +7,7 @@ It is backed by [Redis], an in-memory key-value store known for its flexibility 
 
 ZIO Backtask was heavily inspired by [sidekiq] - very popular Ruby framwork for background jobs.
 
-The project uses Scala 3 and its capabilities and relies upon [Lettuce] Redis Client.
+The project uses ZIO 2, Scala 3 and its capabilities and relies upon [Lettuce] Redis Client.
 
 > ⚠️ This project is in proof-of-concept phase. It lacks a lot of basic and expected 
 > functionalities and its APIs are subject to change. Please feel free to reach-out
