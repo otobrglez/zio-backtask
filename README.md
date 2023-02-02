@@ -49,9 +49,9 @@ object BacktaskApp extends ZIOAppDefault:
     for
       _ <- logInfo("Booting.")
       _ <- add(40, 2).performAsync()
-      _ <- add(20, 2).performAsync()
       _ <- add(20, 22).performAsync("math")
       _ <- saySomething("Hello world!").performAsync()
+      _ <- saySomething("Doing this in one hour").performAt(LocalDateTime.now.plusHours(1), "hello")
       _ <- saySomething("Hello after 10 seconds").performIn(10.seconds, "hello")
       _ <- saySomething("Do this in 1 minute!").performIn(1.minute, "delayed")
       _ <- saySomething("Experiment is done!").performIn(2.minutes, "hello")
