@@ -30,7 +30,7 @@ object tasks:
   case class saySomething(raw: String) extends Backtask[Any]:
     def run = printLine(s"Said ${raw}")
 
-  // A task that generates new tasks with delay until a condition is reached
+  // A task that counts and generates new tasks with delay until a condition is reached
   case class countFromTo(from: Int, to: Int, delay: Int) extends Backtask[Redis]:
     override def queueName = "counting"
     def run =
