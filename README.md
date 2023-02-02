@@ -90,3 +90,4 @@ Please check the [examples](modules/examples/src/main/scala/zio/backtask/example
 
 [Redis]: https://redis.io
 [Lettuce]: https://lettuce.io
+[sidekiq]: https://github.com/mperham/sidekiq
