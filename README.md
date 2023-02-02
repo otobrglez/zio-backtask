@@ -4,7 +4,7 @@
 
 ## Overview
 
-ZIO Backtask is background job frameworks that you can simply implement in your ZIO application. 
+ZIO Backtask is background job framework that you can simply implement in your ZIO application. 
 It is backed by [Redis], an in-memory key-value store known for its flexibility and performance.
 
 ZIO Backtask was heavily inspired by [sidekiq] - very popular Ruby framework for background jobs.
