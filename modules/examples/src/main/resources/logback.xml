@@ -1,0 +1,24 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- <withJansi>false</withJansi> -->
+        <encoder>
+            <!--            <pattern>[%thread] %highlight(%-5level) %cyan(%logger{15}) - %msg %X %n</pattern> -->
+            <pattern>%highlight(%-5level) %cyan(%logger{15}) - %msg %X %n</pattern>
+            <!-- <pattern>%d{HH:mm:ss.SSS} [%thread] trace_id=%X{trace_id} user_id=%X{user} %-5level %logger{36} %msg%n</pattern> -->
+
+            <!-- <pattern>%date %-5level [%thread] - [%logger]- %msg%n</pattern> -->
+        </encoder>
+    </appender>
+
+    <logger name="io.lettuce.core" level="INFO"/>
+
+    <logger name="zio.backtask" level="${BACKTASK_LOG_LEVEL:-INFO}"/>
+    <logger name="zio.backtask.Backtask" level="DEBUG"/>
+    <logger name="zio.backtask.RedisClient" level="DEBUG"/>
+    <logger name="zio.backtask.BacktaskScheduler" level="DEBUG"/>
+    <logger name="zio.backtask.Worker" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

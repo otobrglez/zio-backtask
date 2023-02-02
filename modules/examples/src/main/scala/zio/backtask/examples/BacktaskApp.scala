@@ -8,7 +8,7 @@ import zio.{ZIOAppDefault, *}
 
 import scala.concurrent.duration.*
 
-object tasks:
+object Tasks:
   case class add(a: Int, b: Int, yes: Option[String] = None) extends Backtask[Any]:
     override def queueName = "math"
 
@@ -36,7 +36,7 @@ object tasks:
       yield ()
 
 object BacktaskApp extends ZIOAppDefault:
-  import tasks.*
+  import Tasks.*
   override val bootstrap = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   def clientProgram: ZIO[Redis, Throwable, Unit] =
@@ -53,7 +53,7 @@ object BacktaskApp extends ZIOAppDefault:
       _ <- saySomething("Bar 20").performIn(20.seconds, "hello")
       _ <- saySomething("Baz 60").performIn(60.seconds, "hello")
       _ <- saySomething("Do this in 1 minute!").performIn(1.minute, "delayed")
-      _ <- saySomething("Experiment is done!").performIn(2.minutes, "hello")
+      _ <- saySomething("Experiment is done!").performIn(1.1.minutes, "hello")
       _ <- countFromTo(0, 20, 3).performAsync()
       _ <- taskThatFails("Please fail me.").performIn(5.seconds, "failures")
       _ <- saySomething("Mail was sent! ✉️").performIn(5.seconds, "mail")
@@ -69,6 +69,9 @@ object BacktaskApp extends ZIOAppDefault:
     yield ()
 
   def run =
-    program.provideLayer(RedisClient.live) <&>
+    (program.provideLayer(RedisClient.live) <&>
       Worker.run.delay(2.seconds).provideLayer(RedisClient.live) <&>
-      Worker.run.delay(3.seconds).provideLayer(RedisClient.live)
+      Worker.run.delay(3.seconds).provideLayer(RedisClient.live))
+      .timeout(
+        zio.Duration.fromSeconds(1.3.minutes.toSeconds)
+      )

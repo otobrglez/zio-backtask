@@ -5,10 +5,11 @@ ThisBuild / version      := "0.0.1"
 
 // Global / onChangedBuildSource := ReloadOnSourceChanges
 
-lazy val root = 
+lazy val root =
   project
     .in(file("."))
     .aggregate(library, examples)
+    .settings(name := "backtask")
     .settings(publish / skip := true)
 
 lazy val library =
@@ -16,7 +17,7 @@ lazy val library =
     .in(file("modules/library"))
     .settings(
       name := "zio-backtask",
-      libraryDependencies ++= { zio ++ logging ++ circe ++ redis },
+      libraryDependencies ++= { zio ++ logging ++ circe ++ redis }
     )
     .settings(publish / skip := true)
 
@@ -30,8 +31,11 @@ lazy val examples =
     .settings(publish / skip := true)
 
 scalacOptions ++= Seq(
-  "-encoding", "UTF-8", "-feature", "-unchecked",
-  "-deprecation", 
-  "-Yretain-trees", 
-  "-language:higherKinds",
+  "-encoding",
+  "UTF-8",
+  "-feature",
+  "-unchecked",
+  "-deprecation",
+  "-Yretain-trees",
+  "-language:higherKinds"
 )
