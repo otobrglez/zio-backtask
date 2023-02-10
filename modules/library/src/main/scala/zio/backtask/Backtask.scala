@@ -3,20 +3,18 @@ package zio.backtask
 import io.circe.*
 import zio.Console.printLine
 import zio.ZIO.{attempt, attemptBlocking, fail, logDebug, logError, logInfo, succeed, when}
+import zio.backtask.Redis.{lpush, sadd, zadd}
 import zio.logging.backend.SLF4J
 import zio.stream.{ZSink, ZStream}
 import zio.{ZIOAppDefault, *}
-
-import scala.concurrent.duration.*
-import io.circe.generic.semiauto.*
-import io.circe.syntax.*
 
 import java.math.BigInteger
 import java.security.SecureRandom
 import java.time.{Clock, Instant, LocalDateTime, ZoneOffset}
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.*
 
-trait Backtask[Env]:
+trait Backtask[-Env]:
   self =>
   import Backtask.{default, QueueName}
 
@@ -24,18 +22,25 @@ trait Backtask[Env]:
 
   def run: ZIO[Env, Throwable, Unit]
 
-  def performAsync[T <: Backtask[Env]](
-    queueName: QueueName = default
-  ): ZIO[Redis, Throwable, JobID] =
+  def performAsync[T >: Backtask[Env]]: ZIO[Redis, Throwable, JobID] =
+    Backtask.enqueue(self, queueName = default, None)
+
+  def performAsync[T >: Backtask[Env]](queueName: QueueName): ZIO[Redis, Throwable, JobID] =
     Backtask.enqueue(self, queueName, None)
 
-  def performIn[T <: Backtask[Env]](
-    delay: FiniteDuration,
-    queueName: QueueName = default
-  ): ZIO[Redis, Throwable, JobID] =
+  def performIn[T >: Backtask[Env]](delay: FiniteDuration): ZIO[Redis, Throwable, JobID] =
+    Backtask.enqueue(self, queueName = default, Some(delay))
+
+  def performIn[T >: Backtask[Env]](delay: FiniteDuration, queueName: QueueName): ZIO[Redis, Throwable, JobID] =
     Backtask.enqueue(self, queueName, Some(delay))
 
-  def performAt[T <: Backtask[Env]](
+  def performIn[T >: Backtask[Env]](delay: zio.Duration): ZIO[Redis, Throwable, JobID] =
+    Backtask.enqueue(self, queueName = default, Some(delay.toSeconds.seconds))
+
+  def performIn[T >: Backtask[Env]](delay: zio.Duration, queueName: QueueName): ZIO[Redis, Throwable, JobID] =
+    Backtask.enqueue(self, queueName, Some(delay.toSeconds.seconds))
+
+  def performAt[T >: Backtask[Env]](
     at: LocalDateTime,
     queueName: QueueName = default
   ): ZIO[Redis, Throwable, JobID] =
@@ -48,39 +53,39 @@ trait Backtask[Env]:
         Some(delay)
       )
     )
-    
+
 object Backtask:
   type QueueName = String
   val default: QueueName = "default"
   type JobJson = String
 
-  def enqueue[Env, T <: Backtask[Env]](
+  private def enqueue[Env, T <: Backtask[Env]](
     task: T,
-    outQueueName: QueueName = default,
+    queueName: QueueName = default,
     delay: Option[FiniteDuration] = None
   ): ZIO[Redis, Throwable, JobID] =
     for
-      queueName <- succeed(getQueue(task, outQueueName))
-      _         <- when(delay.isDefined && queueName == default)(
+      queue    <- succeed(getQueueName(task, queueName))
+      _        <- when(delay.isDefined && queue == default)(
         fail(new RuntimeException("Tasks on default queue can't be delayed."))
       )
-      jobTuple  <- taskToJob(task, queueName)
-      result    <- durationToFuture(delay).fold {
-        Redis.asyncSadd("queues", default, queueName) <&> Option
-          .when(queueName == default)(
-            Redis.asyncLpush(s"queue:$queueName", jobTuple._2)
+      jobTuple <- taskToJob(task, queue)
+      result   <- durationToFuture(delay).fold {
+        sadd("queues", default, queue) <&> Option
+          .when(queue == default)(
+            lpush(s"queue:$queue", jobTuple._2)
           )
           .getOrElse(
-            Redis.asyncZadd(s"queue:$queueName", Instant.now.getEpochSecond.toDouble, jobTuple._2)
+            zadd(s"queue:$queue", Instant.now.getEpochSecond.toDouble, jobTuple.jobJson)
           )
       } { future =>
-        Redis.asyncSadd("queues", default, queueName) <&>
-          Redis.asyncZadd(s"queue:$queueName", future.toDouble, jobTuple._2)
+        sadd("queues", default, queue) <&>
+          zadd(s"queue:$queue", future.toDouble, jobTuple.jobJson)
       }
-      _         <- logDebug(s"Scheduled job ${jobTuple._1.jid} on queue \"$queueName\" with result $result")
-    yield jobTuple._1.jid
+      _        <- logDebug(s"Scheduled job ${jobTuple.job.jid} on queue \"$queue\" with result $result")
+    yield jobTuple.job.jid
 
-  private def getQueue[Env, T <: Backtask[Env]](task: T, outerQueueName: QueueName): QueueName =
+  private def getQueueName[Env, T <: Backtask[Env]](task: T, outerQueueName: QueueName): QueueName =
     if outerQueueName != task.queueName then
       if outerQueueName != default then outerQueueName
       else task.queueName
@@ -99,7 +104,8 @@ object Backtask:
         })
       )
 
-  private def taskToJob[Env, T <: Backtask[Env]](task: T, queueName: QueueName): Task[(Job, JobJson)] =
+  final case class JobTuple(job: Job, jobJson: JobJson)
+  private def taskToJob[Env, T <: Backtask[Env]](task: T, queueName: QueueName): Task[JobTuple] =
     import SERDE.jobEncoder
     for
       job     <- succeed(
@@ -111,6 +117,4 @@ object Backtask:
         )
       )
       jobJson <- attempt(jobEncoder(job).noSpaces)
-      // TODO: Figure out who is doing double serialisation(?)
-      _       <- ZIO.when(queueName.startsWith("\""))(ZIO.fail(new RuntimeException("Wtf?!")))
-    yield (job, jobJson)
+    yield JobTuple(job, jobJson)

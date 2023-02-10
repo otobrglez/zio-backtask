@@ -7,7 +7,6 @@ import zio.logging.backend.SLF4J
 import zio.{ZIOAppDefault, *}
 
 import java.time.LocalDateTime
-import scala.concurrent.duration.*
 
 object Tasks:
   case class add(a: Int, b: Int, yes: Option[String] = None) extends Backtask[Any]:
@@ -44,16 +43,16 @@ object BacktaskApp extends ZIOAppDefault:
     for
       _ <- logInfo("Booting.")
       _ <- Redis.flushdb() *> logInfo("Flushed db.")
-      _ <- add(40, 2).performAsync()
+      _ <- add(40, 2).performAsync
       _ <- add(20, 22).performAsync("math")
-      _ <- saySomething("Hello world!").performAsync()
+      _ <- saySomething("Hello world!").performAsync
       _ <- saySomething("Doing this in one hour").performAt(LocalDateTime.now.plusHours(1), "hello")
       _ <- saySomething("Foo 10").performIn(10.seconds, "hello")
       _ <- saySomething("Bar 20").performIn(20.seconds, "hello")
       _ <- saySomething("Baz 60").performIn(60.seconds, "hello")
       _ <- saySomething("Do this in 1 minute!").performIn(1.minute, "delayed")
-      _ <- saySomething("Experiment is done!").performIn(1.1.minutes, "hello")
-      _ <- countFromTo(0, 20, 3).performAsync()
+      _ <- saySomething("Experiment is done!").performIn(90.seconds, "hello")
+      _ <- countFromTo(0, 20, 3).performAsync
       _ <- taskThatFails("Please fail me.").performIn(5.seconds, "failures")
       _ <- saySomething("Mail was sent! ✉️").performIn(5.seconds, "mail")
       _ <- logInfo("Done.")
@@ -71,6 +70,4 @@ object BacktaskApp extends ZIOAppDefault:
     (program.provideLayer(RedisClient.live) <&>
       Worker.run.delay(2.seconds).provideLayer(RedisClient.live) <&>
       Worker.run.delay(3.seconds).provideLayer(RedisClient.live))
-      .timeout(
-        zio.Duration.fromSeconds(1.3.minutes.toSeconds)
-      )
+      .timeout(2.minutes)

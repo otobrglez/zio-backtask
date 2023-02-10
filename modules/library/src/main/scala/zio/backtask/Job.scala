@@ -9,5 +9,5 @@ final case class Job(
   jid: JobID = ID.mkID,
   createdAt: Long = java.time.Instant.now(Clock.systemUTC()).toEpochMilli,
   args: List[Any] = List.empty,
-  argTypes: List[String] = List.empty
+  argTypes: List[String] = List.empty,
 )

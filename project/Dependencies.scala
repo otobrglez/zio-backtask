@@ -18,14 +18,16 @@ object Dependencies {
 
   lazy val zio: Modules = Seq(
     "dev.zio" %% "zio",
-    "dev.zio" %% "zio-test",
-    "dev.zio" %% "zio-test-sbt",
     "dev.zio" %% "zio-streams",
-    "dev.zio" %% "zio-test-junit",
     "dev.zio" %% "zio-macros"
   ).map(_ % Versions.zio) ++ Seq(
     "dev.zio" %% "zio-cli" % "0.2.8"
-  )
+  ) ++ Seq(
+    "dev.zio" %% "zio-test",
+    "dev.zio" %% "zio-test-junit",
+    "dev.zio" %% "zio-test-magnolia",
+    "dev.zio" %% "zio-test-sbt"
+  ).map(_ % Versions.zio % "it,test")
 
   lazy val circe: Modules = Seq(
     "io.circe" %% "circe-core",
@@ -35,6 +37,10 @@ object Dependencies {
 
   lazy val redis: Modules = Seq(
     "io.lettuce" % "lettuce-core" % "6.2.2.RELEASE"
+  )
+
+  lazy val testcontainers: Modules = Seq(
+    "org.testcontainers" % "testcontainers" % "1.17.6" % "it,test"
   )
 
   lazy val projectResolvers: Seq[MavenRepository] = Seq(

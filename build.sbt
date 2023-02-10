@@ -1,4 +1,5 @@
 import Dependencies._
+import sbt.librarymanagement.Configurations.IntegrationTest
 
 ThisBuild / scalaVersion := "3.2.2"
 ThisBuild / version      := "0.0.1"
@@ -16,9 +17,12 @@ lazy val library =
   project
     .in(file("modules/library"))
     .settings(
-      name := "zio-backtask",
-      libraryDependencies ++= { zio ++ logging ++ circe ++ redis }
+      name           := "zio-backtask",
+      libraryDependencies ++= { zio ++ logging ++ circe ++ redis ++ testcontainers },
+      testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
+    .configs(IntegrationTest)
+    .settings(Defaults.itSettings)
     .settings(publish / skip := true)
 
 lazy val examples =
