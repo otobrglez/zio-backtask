@@ -19,9 +19,7 @@ object BacktaskScheduler:
       for
         key  <- succeed(s"queue:$default")
         jobs <- rpop(key, batchSize)
-        _    <- when(jobs.nonEmpty) {
-          lpush(now, jobs: _*).flatMap(logMove(key))
-        }
+        _    <- when(jobs.nonEmpty)(lpush(now, jobs: _*).flatMap(logMove(key)))
       yield ()
     else
       for
@@ -31,9 +29,7 @@ object BacktaskScheduler:
           (0, batchSize)
         )
         _    <- when(jobs.nonEmpty) {
-          (lpush(now, jobs: _*).flatMap(logMove("*")) <&>
-            zrem(s"queue:$queueName", jobs: _*)) *>
-            logDebug(s"Jobs moved to now: ${jobs.length}")
+          lpush(now, jobs: _*).flatMap(logMove("*")) <&> zrem(s"queue:$queueName", jobs: _*)
         }
       yield ()
 
