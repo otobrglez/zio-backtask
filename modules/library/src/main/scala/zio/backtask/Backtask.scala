@@ -13,12 +13,22 @@ import java.security.SecureRandom
 import java.time.{Clock, Instant, LocalDateTime, ZoneOffset}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.*
+import zio.Duration
 
-trait Backtask[-Env]:
+import scala.collection.mutable.ListBuffer
+import scala.reflect.ClassTag
+
+trait Backtask[Env]:
   self =>
   import Backtask.{default, QueueName}
 
-  def queueName: QueueName = default
+  def queueName: QueueName                                = default
+  private var delay: Option[FiniteDuration]               = None
+  private[this] var afterTasks: ListBuffer[Backtask[Env]] = ListBuffer.empty
+
+  def withDelay(delay: FiniteDuration): Backtask[Env]                          = { self.delay = Some(delay); self }
+  def withAfterTasks[T >: Backtask[Env]](tasks: Backtask[Env]*): Backtask[Env] = { afterTasks.appendAll(tasks); self }
+  def repeatN(times: Int): Backtask[Env]                                       = self // TODO: Implement?
 
   def run: ZIO[Env, Throwable, Unit]
 
@@ -46,13 +56,7 @@ trait Backtask[-Env]:
   ): ZIO[Redis, Throwable, JobID] =
     attempt(
       FiniteDuration.apply(Instant.now.getEpochSecond - at.toEpochSecond(ZoneOffset.UTC), TimeUnit.SECONDS)
-    ).flatMap(delay =>
-      Backtask.enqueue(
-        self,
-        queueName,
-        Some(delay)
-      )
-    )
+    ).flatMap(delay => Backtask.enqueue(self, queueName, Some(delay)))
 
 object Backtask:
   type QueueName = String

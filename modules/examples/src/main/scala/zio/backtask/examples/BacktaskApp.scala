@@ -8,7 +8,7 @@ import zio.{ZIOAppDefault, *}
 
 import java.time.LocalDateTime
 
-object Tasks:
+private[this] object tasks:
   case class add(a: Int, b: Int, yes: Option[String] = None) extends Backtask[Any]:
     override def queueName = "math"
 
@@ -36,7 +36,7 @@ object Tasks:
       yield ()
 
 object BacktaskApp extends ZIOAppDefault:
-  import Tasks.*
+  import tasks.*
   override val bootstrap = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   def clientProgram: ZIO[Redis, Throwable, Unit] =
