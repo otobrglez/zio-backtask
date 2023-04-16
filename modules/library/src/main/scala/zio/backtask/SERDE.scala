@@ -4,6 +4,8 @@ import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 
+import scala.collection.mutable.ListBuffer
+
 object SERDE:
   private def unsafe(x: Option[Json], `type`: String): Json =
     x.getOrElse(throw new Exception(s"Invalid ${`type`} value"))
@@ -23,10 +25,11 @@ object SERDE:
         }
       case list: List[_]     => Json.arr(list.map(convertValue): _*)
       case array: Array[_]   => Json.arr(array.map(convertValue): _*)
+      case lb: ListBuffer[_] => Json.arr(lb.toList.map(convertValue): _*)
       case obj: Map[_, _]    =>
         Json.obj(obj.toList.map { case (k, v) => (k.asInstanceOf[String], convertValue(v)) }: _*)
       // case job: Job          => jobEncoder(job)
-      case v                 => throw new Exception(s"No idea what to do with ${v}")
+      case v                 => throw new Exception(s"No idea what to do with \"${v}\"")
     }
 
   implicit val jobEncoder: Encoder[Job] = deriveEncoder

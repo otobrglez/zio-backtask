@@ -1,0 +1,17 @@
+version: '3'
+services:
+  redis:
+    image: 'redis:7-alpine'
+    ports:
+      - '7777:6379'
+    command: redis-server --save 20 1 --loglevel debug
+    restart: always
+    volumes:
+      - redis-volume:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+volumes:
+  redis-volume:
+    driver: "local"

@@ -35,6 +35,10 @@ object Dependencies {
     "io.circe" %% "circe-parser"
   ).map(_ % "0.15.0-M1")
 
+  lazy val jsoniter: Modules = Seq(
+    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.20.7"
+  )
+
   lazy val redis: Modules = Seq(
     "io.lettuce" % "lettuce-core" % "6.2.2.RELEASE"
   )

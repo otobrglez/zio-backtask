@@ -2,13 +2,22 @@ package zio.backtask.examples
 
 import zio.Console.printLine
 import zio.ZIO.{fail, logDebug, logError, logInfo, when}
-import zio.backtask.{Backtask, BacktaskScheduler, Redis, RedisClient, Worker}
+import zio.backtask.{Backtask, BacktaskScheduler, JobID, Redis, RedisClient, TaskSerde, Worker}
 import zio.logging.backend.SLF4J
 import zio.{ZIOAppDefault, *}
 
 import java.time.LocalDateTime
 
-object Tasks:
+given TaskSerde = new TaskSerde {
+  override def taskToJob[Env, T >: Backtask[Env]](task: T): ZIO[Any, Throwable, (JobID, String)] =
+    ZIO.succeed(
+      ("xxx", "xxxx-payload")
+    )
+
+  override def jobToTask[Env, T >: Backtask[Env]](job: String): T = ???
+}
+
+private[this] object tasks:
   case class add(a: Int, b: Int, yes: Option[String] = None) extends Backtask[Any]:
     override def queueName = "math"
 
@@ -36,14 +45,14 @@ object Tasks:
       yield ()
 
 object BacktaskApp extends ZIOAppDefault:
-  import Tasks.*
+  import tasks.*
   override val bootstrap = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   def clientProgram: ZIO[Redis, Throwable, Unit] =
     for
       _ <- logInfo("Booting.")
       _ <- Redis.flushdb() *> logInfo("Flushed db.")
-      _ <- add(40, 2).performAsync
+      // _ <- add(40, 2).performAsync()
       _ <- add(20, 22).performAsync("math")
       _ <- saySomething("Hello world!").performAsync
       _ <- saySomething("Doing this in one hour").performAt(LocalDateTime.now.plusHours(1), "hello")

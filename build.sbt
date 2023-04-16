@@ -18,7 +18,9 @@ lazy val library =
     .in(file("modules/library"))
     .settings(
       name           := "zio-backtask",
-      libraryDependencies ++= { zio ++ logging ++ circe ++ redis ++ testcontainers },
+      libraryDependencies ++= {
+        zio ++ logging ++ circe ++ redis ++ testcontainers ++ jsoniter
+      },
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
     .configs(IntegrationTest)
