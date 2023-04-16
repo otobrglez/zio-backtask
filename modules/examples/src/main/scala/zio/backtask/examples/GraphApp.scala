@@ -25,7 +25,6 @@ private[this] object UserGraphs:
   val g3: TaskGraph[Any] =
     Say("send email") ~> Say("send another email") ++
       Say("scrape something").withDelay(1.day) ~> Say("send another email")
-      ~> Say("have fun").repeatN(2)
 
   val g4 = (Say("Do this") ~> Say("Do that")).withDelay(10.seconds) ++ Say("I was here.")
 
@@ -35,10 +34,10 @@ object GraphApp extends ZIOAppDefault:
 
   def program =
     for
-      _ <- g1.performAsync
-      _ <- g2.performAsync
-      _ <- g3.performAsync
-      _ <- g4.performAsync
+      _ <- g1.performAsync()
+      _ <- g2.performAsync()
+      _ <- g3.performAsync()
+      _ <- g4.performAsync()
     yield ()
 
   def run = program.provideLayer(RedisClient.live)

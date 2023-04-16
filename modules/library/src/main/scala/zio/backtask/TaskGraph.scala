@@ -14,7 +14,7 @@ object TaskGraph:
 
   extension [T >: Backtask[Env], Env](tasks: TaskGraph[Env])
     def ++(otherTask: Backtask[Env]): TaskGraph[Env]      = tasks ++ TaskGraph(otherTask)
-    def performAsync: ZIO[Redis, Throwable, Array[JobID]] =
+    def performAsync()(using TaskSerde): ZIO[Redis, Throwable, Array[JobID]] =
       fromIterable(tasks).mapZIO(_.performAsync).runCollect.map(_.toArray)
 
   def apply[T <: Backtask[Env], Env](task: T): TaskGraph[Env] = List(task)

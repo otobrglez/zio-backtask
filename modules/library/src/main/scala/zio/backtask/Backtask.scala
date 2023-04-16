@@ -6,21 +6,23 @@ import zio.ZIO.{attempt, attemptBlocking, fail, logDebug, logError, logInfo, suc
 import zio.backtask.Redis.{lpush, sadd, zadd}
 import zio.logging.backend.SLF4J
 import zio.stream.{ZSink, ZStream}
-import zio.{ZIOAppDefault, *}
+import zio.{Duration, ZIOAppDefault, *}
 
 import java.math.BigInteger
 import java.security.SecureRandom
 import java.time.{Clock, Instant, LocalDateTime, ZoneOffset}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.*
-import zio.Duration
-
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration.*
 import scala.reflect.ClassTag
+
+trait TaskSerde:
+  def taskToJob[Env, T >: Backtask[Env]](task: T): ZIO[Any, Throwable, (JobID, String)]
+  def jobToTask[Env, T >: Backtask[Env]](job: String): T // TODO: This should not be just "T"
 
 trait Backtask[Env]:
   self =>
-  import Backtask.{default, QueueName}
+  import Backtask.{default, enqueue, QueueName}
 
   def queueName: QueueName                                = default
   private var delay: Option[FiniteDuration]               = None
@@ -28,35 +30,38 @@ trait Backtask[Env]:
 
   def withDelay(delay: FiniteDuration): Backtask[Env]                          = { self.delay = Some(delay); self }
   def withAfterTasks[T >: Backtask[Env]](tasks: Backtask[Env]*): Backtask[Env] = { afterTasks.appendAll(tasks); self }
-  def repeatN(times: Int): Backtask[Env]                                       = self // TODO: Implement?
 
   def run: ZIO[Env, Throwable, Unit]
 
-  def performAsync[T >: Backtask[Env]]: ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName = default, None)
+  def performAsync[T >: Backtask[Env]](using TaskSerde): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName = default, None)
 
-  def performAsync[T >: Backtask[Env]](queueName: QueueName): ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName, None)
+  def performAsync[T >: Backtask[Env]](queueName: QueueName)(using TaskSerde): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName, None)
 
-  def performIn[T >: Backtask[Env]](delay: FiniteDuration): ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName = default, Some(delay))
+  def performIn[T >: Backtask[Env]](delay: FiniteDuration)(using TaskSerde): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName = default, Some(delay))
 
-  def performIn[T >: Backtask[Env]](delay: FiniteDuration, queueName: QueueName): ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName, Some(delay))
+  def performIn[T >: Backtask[Env]](delay: FiniteDuration, queueName: QueueName)(using
+    TaskSerde
+  ): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName, Some(delay))
 
-  def performIn[T >: Backtask[Env]](delay: zio.Duration): ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName = default, Some(delay.toSeconds.seconds))
+  def performIn[T >: Backtask[Env]](delay: zio.Duration)(using TaskSerde): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName = default, Some(delay.toSeconds.seconds))
 
-  def performIn[T >: Backtask[Env]](delay: zio.Duration, queueName: QueueName): ZIO[Redis, Throwable, JobID] =
-    Backtask.enqueue(self, queueName, Some(delay.toSeconds.seconds))
+  def performIn[T >: Backtask[Env]](delay: zio.Duration, queueName: QueueName)(using
+    TaskSerde
+  ): ZIO[Redis, Throwable, JobID] =
+    enqueue(self, queueName, Some(delay.toSeconds.seconds))
 
   def performAt[T >: Backtask[Env]](
     at: LocalDateTime,
     queueName: QueueName = default
-  ): ZIO[Redis, Throwable, JobID] =
+  )(using TaskSerde): ZIO[Redis, Throwable, JobID] =
     attempt(
       FiniteDuration.apply(Instant.now.getEpochSecond - at.toEpochSecond(ZoneOffset.UTC), TimeUnit.SECONDS)
-    ).flatMap(delay => Backtask.enqueue(self, queueName, Some(delay)))
+    ).flatMap(delay => enqueue(self, queueName, Some(delay)))
 
 object Backtask:
   type QueueName = String
@@ -67,12 +72,16 @@ object Backtask:
     task: T,
     queueName: QueueName = default,
     delay: Option[FiniteDuration] = None
-  ): ZIO[Redis, Throwable, JobID] =
+  )(using ts: TaskSerde): ZIO[Redis, Throwable, JobID] =
     for
-      queue    <- succeed(getQueueName(task, queueName))
-      _        <- when(delay.isDefined && queue == default)(
+      queue <- succeed(getQueueName(task, queueName))
+      _     <- when(delay.isDefined && queue == default)(
         fail(new RuntimeException("Tasks on default queue can't be delayed."))
       )
+      pmx   <- ts.taskToJob(task)
+      _     <- ZIO.succeed(println("FIRE " * 5 + s"PMX = ${pmx}"))
+      // pmx      <- TaskSerde.taskToJob(task)
+
       jobTuple <- taskToJob(task, queue)
       result   <- durationToFuture(delay).fold {
         sadd("queues", default, queue) <&> Option
