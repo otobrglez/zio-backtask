@@ -36,8 +36,8 @@ object SERDE:
   // implicit val listOfStringEncoder: io.circe.Encoder[List[String]] = v => Json.arr(v.map(convertValue): _*)
   implicit val listOfAnyEncoder: io.circe.Encoder[List[Any]]       = v => Json.arr(v.map(convertValue): _*)
 
-  implicit val anyDecoder: Decoder[Any] = Decoder.instance { c =>
-    c.focus match {
+  implicit val anyDecoder: Decoder[Any] = Decoder.instance {
+    _.focus match {
       case Some(x) => Right(x)
       case None    => Left(DecodingFailure("Could not parse", List()))
     }

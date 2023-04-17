@@ -5,12 +5,12 @@ object Dependencies {
   type Modules = Seq[ModuleID]
 
   object Versions {
-    val zio: Version        = "2.0.6"
+    val zio: Version        = "2.0.12"
     val zioLogging: Version = "2.1.8"
   }
 
   lazy val logging: Modules = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.4.5"
+    "ch.qos.logback" % "logback-classic" % "1.4.6"
   ) ++ Seq(
     "dev.zio" %% "zio-logging",
     "dev.zio" %% "zio-logging-slf4j"
@@ -21,7 +21,7 @@ object Dependencies {
     "dev.zio" %% "zio-streams",
     "dev.zio" %% "zio-macros"
   ).map(_ % Versions.zio) ++ Seq(
-    "dev.zio" %% "zio-cli" % "0.2.8"
+    "dev.zio" %% "zio-cli" % "0.4.0"
   ) ++ Seq(
     "dev.zio" %% "zio-test",
     "dev.zio" %% "zio-test-junit",
@@ -36,11 +36,11 @@ object Dependencies {
   ).map(_ % "0.15.0-M1")
 
   lazy val redis: Modules = Seq(
-    "io.lettuce" % "lettuce-core" % "6.2.2.RELEASE"
+    "io.lettuce" % "lettuce-core" % "6.2.3.RELEASE"
   )
 
   lazy val testcontainers: Modules = Seq(
-    "org.testcontainers" % "testcontainers" % "1.17.6" % "it,test"
+    "org.testcontainers" % "testcontainers" % "1.18.0" % "it,test"
   )
 
   lazy val projectResolvers: Seq[MavenRepository] = Seq(

@@ -2,7 +2,7 @@ package zio.backtask.examples
 
 import zio.Console.printLine
 import zio.ZIO.{fail, logDebug, logError, logInfo, when}
-import zio.backtask.{Backtask, BacktaskScheduler, Redis, RedisClient, Worker}
+import zio.backtask.*
 import zio.logging.backend.SLF4J
 import zio.{ZIOAppDefault, *}
 

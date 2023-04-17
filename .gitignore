@@ -1,3 +1,6 @@
+.bloop/
+.metals/
+
 .envrc
 *.rdb
 .bsp
